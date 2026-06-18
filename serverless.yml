@@ -29,10 +29,10 @@ functions:
         - ./**  # Incluir todo el contenido del directorio
     events:
       - http:
-        path: /scrape/table/sismos
-        method: get
-        cors: true
-        integration: lambda
+          path: /scrape/table/sismos
+          method: get
+          cors: true
+          integration: lambda
 
 resources:
   Resources:
