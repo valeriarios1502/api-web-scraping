@@ -1,11 +1,10 @@
 import requests
-from bs4 import BeautifulSoup
 import boto3
 import uuid
 
 def lambda_handler(event, context):
     # URL de la página web que contiene la tabla
-    url = "https://ultimosismo.igp.gob.pe/productos/reportes-sismicos"
+    url = "https://ultimosismo.igp.gob.pe/api/ultimo-sismo/ajaxb/2026"
 
     # Realizar la solicitud HTTP a la página web
     response = requests.get(url)
@@ -15,47 +14,39 @@ def lambda_handler(event, context):
             'body': 'Error al acceder a la página web'
         }
 
-    # Parsear el contenido HTML de la página web
-    soup = BeautifulSoup(response.content, 'html.parser')
-
-    # Encontrar la tabla en el HTML
-    table = soup.find('table')
-    if not table:
-        return {
-            'statusCode': 404,
-            'body': 'No se encontró la tabla en la página web'
-        }
-
-    # Extraer los encabezados de la tabla
-    headers = [header.text for header in table.find_all('th')]
-
-    # Extraer las filas de la tabla
-    rows = []
-    for row in table.find_all('tr')[1:]:  # Omitir el encabezado
-        cells = row.find_all('td')
-        rows.append({headers[i+1]: cell.text for i, cell in enumerate(cells)})
+    data = response.json()
 
     # Guardar los datos en DynamoDB
     dynamodb = boto3.resource('dynamodb')
     table = dynamodb.Table('TablaWebScrapingSismos')
 
-    # Eliminar todos los elementos de la tabla antes de agregar los nuevos
+
+     # Eliminar todos los elementos existentes antes de insertar los nuevos
     scan = table.scan()
     with table.batch_writer() as batch:
         for each in scan['Items']:
-            batch.delete_item(
-                Key={
-                    'id': each['id']
-                }
-            )
-
-    # Insertar los nuevos datos
-    i = 1
-    for row in rows:
-        row['#'] = i
-        row['id'] = str(uuid.uuid4())  # Generar un ID único para cada entrada
-        table.put_item(Item=row)
-        i = i + 1
+            batch.delete_item(Key={'id': each['id']})
+ 
+    # Insertar los nuevos datos, mapeando los campos relevantes
+    rows = []
+    with table.batch_writer() as batch:
+        for sismo in data:
+            row = {
+                'id': str(uuid.uuid4()),  # uuid
+                'codigo': sismo.get('codigo'),
+                'referencia': sismo.get('referencia'),
+                'magnitud': sismo.get('magnitud'),
+                'fecha_local': sismo.get('fecha_local'),
+                'hora_local': sismo.get('hora_local'),
+                'latitud': sismo.get('latitud'),
+                'longitud': sismo.get('longitud'),
+                'profundidad': sismo.get('profundidad'),
+                'intensidad': sismo.get('intensidad'),
+                'numero_reporte': sismo.get('numero_reporte'),
+                'reporte_acelerometrico_pdf': sismo.get('reporte_acelerometrico_pdf'),
+            }
+            batch.put_item(Item=row)
+            rows.append(row)
 
     # Retornar el resultado como JSON
     return {
