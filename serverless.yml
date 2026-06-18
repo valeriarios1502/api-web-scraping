@@ -22,17 +22,17 @@ functions:
           method: get
           cors: true
           integration: lambda
-    scrape_table_sismos:
-      handler: scrap_table2.lambda_handler  # Asegúrarse de que el nombre
-      package:
+  scrape_table_sismos:
+    handler: scrap_table2.lambda_handler  # Asegúrarse de que el nombre
+    package:
       include:
         - ./**  # Incluir todo el contenido del directorio
-      events:
-        - http:
-          path: /scrape/table/sismos
-          method: get
-          cors: true
-          integration: lambda
+    events:
+      - http:
+        path: /scrape/table/sismos
+        method: get
+        cors: true
+        integration: lambda
 
 resources:
   Resources:
