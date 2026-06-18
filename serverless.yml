@@ -22,6 +22,17 @@ functions:
           method: get
           cors: true
           integration: lambda
+    scrape_table_sismos:
+    handler: scrap_table2.lambda_handler  # Asegúrarse de que el nombre
+    package:
+      include:
+        - ./**  # Incluir todo el contenido del directorio
+    events:
+      - http:
+          path: /scrape/table/sismos
+          method: get
+          cors: true
+          integration: lambda
 
 resources:
   Resources:
@@ -29,6 +40,17 @@ resources:
       Type: AWS::DynamoDB::Table
       Properties:
         TableName: TablaWebScrapping
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+    TablaWebScrapingSismos:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: TablaWebScrapingSismos
         AttributeDefinitions:
           - AttributeName: id
             AttributeType: S
